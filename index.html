@@ -1,0 +1,1861 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1ea">
+  <meta name="description" content="SignedOff: A marked exam-paper comprehension check for AI-generated code diffs before you merge.">
+  <meta property="og:title" content="SignedOff | AI Diff Comprehension Check">
+  <meta property="og:description" content="AI agents make it easy to ship code you can't explain. Answer three pinned questions and clear red-pen margin notes to unlock the Understood stamp.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f4f1ea' stroke='%231c1915' stroke-width='3'/%3E%3Ctext x='6' y='22' font-family='Georgia,serif' font-weight='bold' font-size='16' fill='%23b91c1c'%3ESO%3C/text%3E%3C/svg%3E">
+  <title>SignedOff | AI Diff Comprehension Check</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper-desk: #eae5d9;
+      --paper-sheet: #faf7f0;
+      --paper-tint: #f3efe4;
+      --ink: #1c1915;
+      --ink-secondary: #3f3a33;
+      --ink-quiet: #575046;
+      --rule-hairline: #d5cdbe;
+      --rule-strong: #1c1915;
+      --margin-red: #b91c1c;
+      --margin-red-wash: #fef2f2;
+      --margin-red-rule: #f87171;
+      --amber-ink: #854d0e;
+      --amber-wash: #fefce8;
+      --amber-rule: #eab308;
+      --stamp-green: #14532d;
+      --stamp-green-wash: #f0fdf4;
+      --stamp-green-rule: #16a34a;
+      --diff-add-wash: #ecfdf5;
+      --diff-add-ink: #065f46;
+      --diff-del-wash: #fef2f2;
+      --diff-del-ink: #991b1b;
+      --focus-ring: #991b1b;
+      --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+      --font-sans: "Source Sans 3", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    ::selection {
+      background: #fde047;
+      color: #1c1915;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--paper-tint);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #b8af9e;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--ink-quiet);
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--paper-desk);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* Exam Masthead Ledger */
+    .exam-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background-color: var(--paper-sheet);
+      border-bottom: 2px solid var(--rule-strong);
+    }
+
+    .exam-header-inner {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.65rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1;
+      color: var(--ink);
+    }
+
+    .brand-sub {
+      font-size: 0.92rem;
+      color: var(--ink-secondary);
+      margin: 0;
+    }
+
+    .retake-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-left: 0.75rem;
+      border-left: 1px solid var(--rule-hairline);
+    }
+
+    .retake-strip[hidden] {
+      display: none !important;
+    }
+
+    .ledger-status-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-left: auto;
+    }
+
+    /* Buttons */
+    .btn-ink {
+      background-color: var(--ink);
+      color: var(--paper-sheet);
+      border: 1.5px solid var(--ink);
+      padding: 0.45rem 0.95rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-ink:hover:not(:disabled) {
+      background-color: #332e27;
+    }
+    .btn-ink:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-paper {
+      background-color: var(--paper-tint);
+      color: var(--ink);
+      border: 1px solid var(--rule-hairline);
+      padding: 0.32rem 0.68rem;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-paper:hover:not(:disabled) {
+      background-color: #e6dfd1;
+      border-color: var(--ink-quiet);
+    }
+    .btn-paper:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-link-quiet {
+      background: transparent;
+      border: none;
+      padding: 0.25rem 0.4rem;
+      font-size: 0.84rem;
+      color: var(--ink-secondary);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .btn-link-quiet:hover {
+      color: var(--ink);
+    }
+
+    /* Score tally & Rubber stamp */
+    .tally-box {
+      padding: 0.32rem 0.75rem;
+      border: 1px solid var(--rule-hairline);
+      background-color: var(--paper-tint);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .tally-box.is-complete {
+      border-color: var(--stamp-green-rule);
+      background-color: var(--stamp-green-wash);
+      color: var(--stamp-green);
+    }
+
+    @keyframes stampPress {
+      0% {
+        opacity: 0;
+        transform: scale(1.55) rotate(-6deg);
+      }
+      70% {
+        opacity: 1;
+        transform: scale(0.96) rotate(-2deg);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(-2.5deg);
+      }
+    }
+
+    .stamp-box {
+      padding: 0.32rem 0.85rem;
+      font-family: var(--font-serif);
+      font-size: 0.92rem;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .stamp-locked {
+      border: 1.5px dashed #9e9585;
+      color: var(--ink-quiet);
+      background-color: transparent;
+    }
+
+    .stamp-unlocked {
+      border: 2.5px solid var(--stamp-green);
+      color: var(--stamp-green);
+      background-color: var(--stamp-green-wash);
+      transform: rotate(-2.5deg);
+      animation: stampPress 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stamp-unlocked {
+        animation: none;
+      }
+    }
+
+    /* Main Exam Paper Split Sheet */
+    .exam-workspace {
+      max-width: 1380px;
+      margin: 1.25rem auto 3rem;
+      padding: 0 1.25rem;
+    }
+
+    .signoff-export-sheet {
+      background-color: var(--stamp-green-wash);
+      border: 2px solid var(--stamp-green);
+      padding: 1.15rem 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .signoff-export-sheet[hidden] {
+      display: none !important;
+    }
+
+    .signoff-export-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #bbf7d0;
+      margin-bottom: 0.75rem;
+    }
+
+    .signoff-export-title {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--stamp-green);
+      margin: 0;
+    }
+
+    .signoff-export-pre {
+      margin: 0;
+      padding: 0.85rem;
+      background-color: var(--paper-sheet);
+      border: 1px solid #bbf7d0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      color: var(--ink);
+    }
+
+    /* Asymmetric Two-Pane Paper Sheet (no cards-inside-cards) */
+    .exam-paper-sheet {
+      display: grid;
+      grid-template-columns: 1fr;
+      background-color: var(--paper-sheet);
+      border: 1.5px solid var(--rule-strong);
+    }
+
+    @media (min-width: 980px) {
+      .exam-paper-sheet {
+        grid-template-columns: 7fr 5fr;
+      }
+    }
+
+    .diff-ledger-pane {
+      border-bottom: 1.5px solid var(--rule-strong);
+      min-width: 0;
+    }
+
+    @media (min-width: 980px) {
+      .diff-ledger-pane {
+        border-bottom: none;
+        border-right: 1.5px solid var(--rule-strong);
+      }
+    }
+
+    .pane-strip {
+      padding: 0.7rem 1.15rem;
+      background-color: var(--paper-tint);
+      border-bottom: 1px solid var(--rule-hairline);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .pane-strip-heading {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .code-path {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--ink-secondary);
+      background-color: var(--paper-sheet);
+      padding: 0.15rem 0.45rem;
+      border: 1px solid var(--rule-hairline);
+    }
+
+    .red-pen-counter {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--margin-red);
+      background-color: var(--margin-red-wash);
+      border: 1px solid var(--margin-red-rule);
+      padding: 0.12rem 0.5rem;
+    }
+
+    .red-pen-counter[hidden] {
+      display: none !important;
+    }
+
+    /* Left-aligned Opening Empty Diff Sheet */
+    .diff-empty-prompt {
+      padding: 2.5rem 1.75rem;
+      max-width: 36rem;
+    }
+
+    .diff-empty-prompt[hidden] {
+      display: none !important;
+    }
+
+    .diff-empty-heading {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .diff-empty-copy {
+      margin: 0 0 1.25rem;
+      color: var(--ink-secondary);
+      font-size: 0.98rem;
+    }
+
+    .diff-empty-footnote {
+      margin: 1rem 0 0;
+      font-size: 0.85rem;
+      color: var(--ink-quiet);
+    }
+
+    /* Loaded Diff Lines Table */
+    .diff-summary-note {
+      padding: 0.6rem 1.15rem;
+      background-color: var(--amber-wash);
+      border-bottom: 1px solid var(--rule-hairline);
+      font-size: 0.88rem;
+      color: var(--ink-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .diff-stat-group {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      display: inline-flex;
+      gap: 0.5rem;
+    }
+
+    .diff-stat-add {
+      color: var(--diff-add-ink);
+      font-weight: 600;
+    }
+
+    .diff-stat-del {
+      color: var(--diff-del-ink);
+      font-weight: 600;
+    }
+
+    .diff-lines-list {
+      font-family: var(--font-mono);
+      font-size: 0.81rem;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+
+    .diff-row {
+      border-bottom: 1px solid #ede8dc;
+    }
+
+    .diff-row-main {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .diff-line-num {
+      width: 2.8rem;
+      flex-shrink: 0;
+      text-align: right;
+      padding: 0.2rem 0.5rem 0.2rem 0.25rem;
+      color: var(--ink-quiet);
+      background-color: var(--paper-tint);
+      border: none;
+      border-right: 2px solid var(--margin-red-rule);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .diff-line-num:hover {
+      color: var(--ink);
+      background-color: #e5dec9;
+    }
+
+    .diff-sign {
+      width: 1.5rem;
+      flex-shrink: 0;
+      text-align: center;
+      padding: 0.2rem 0;
+      user-select: none;
+    }
+
+    .diff-code {
+      margin: 0;
+      padding: 0.2rem 0.75rem 0.2rem 0.25rem;
+      white-space: pre;
+      flex: 1;
+      color: var(--ink);
+    }
+
+    .diff-row.is-add {
+      background-color: var(--diff-add-wash);
+    }
+    .diff-row.is-add .diff-sign {
+      color: var(--diff-add-ink);
+      font-weight: 600;
+    }
+
+    .diff-row.is-del {
+      background-color: var(--diff-del-wash);
+    }
+    .diff-row.is-del .diff-sign {
+      color: var(--diff-del-ink);
+      font-weight: 600;
+    }
+
+    .diff-row.is-focused {
+      background-color: #fef08a;
+    }
+
+    .diff-row.is-pinned {
+      background-color: var(--margin-red-wash);
+      border-top: 1px solid var(--margin-red-rule);
+      border-bottom: 1px solid var(--margin-red-rule);
+    }
+
+    .line-pin-tag {
+      margin-left: 0.65rem;
+      padding: 0.05rem 0.38rem;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      background-color: var(--paper-tint);
+      border: 1px solid var(--rule-hairline);
+      color: var(--ink-secondary);
+    }
+
+    /* Red-pen teacher margin annotation */
+    .red-pen-note {
+      margin: 0.3rem 0.85rem 0.45rem 3.4rem;
+      padding: 0.45rem 0.7rem;
+      background-color: #fff1f2;
+      border: 1px solid var(--margin-red-rule);
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #7f1d1d;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .red-pen-note strong {
+      font-style: normal;
+      font-weight: 700;
+      color: var(--margin-red);
+    }
+
+    .red-pen-tag {
+      font-family: var(--font-sans);
+      font-style: normal;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--margin-red);
+      white-space: nowrap;
+    }
+
+    /* Right Pane: Ruled Exam Questions Column */
+    .questions-ledger-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .questions-intro-strip {
+      padding: 0.65rem 1.15rem;
+      border-bottom: 1px solid var(--rule-hairline);
+      font-size: 0.88rem;
+      color: var(--ink-secondary);
+      background-color: var(--paper-sheet);
+    }
+
+    .question-section {
+      padding: 1.15rem 1.25rem;
+      border-bottom: 1px solid var(--rule-hairline);
+    }
+
+    .question-section.is-locked {
+      opacity: 0.58;
+    }
+
+    .question-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .question-title-group {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .question-heading {
+      font-family: var(--font-serif);
+      font-size: 1.08rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .verdict-chip {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.12rem 0.55rem;
+      border: 1px solid var(--rule-hairline);
+      background-color: var(--paper-tint);
+      color: var(--ink-secondary);
+    }
+
+    .verdict-chip.is-solid {
+      background-color: var(--stamp-green-wash);
+      border-color: var(--stamp-green-rule);
+      color: var(--stamp-green);
+    }
+
+    .verdict-chip.is-partial {
+      background-color: var(--amber-wash);
+      border-color: var(--amber-rule);
+      color: var(--amber-ink);
+    }
+
+    .verdict-chip.is-missed {
+      background-color: var(--margin-red-wash);
+      border-color: var(--margin-red-rule);
+      color: var(--margin-red);
+    }
+
+    .question-prompt {
+      margin: 0 0 0.65rem;
+      font-size: 0.94rem;
+      color: var(--ink);
+    }
+
+    .answer-box {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid #aba292;
+      background-color: #ffffff;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.45;
+      resize: vertical;
+    }
+    .answer-box:disabled {
+      background-color: var(--paper-tint);
+      cursor: not-allowed;
+    }
+
+    .validation-msg {
+      margin: 0.35rem 0 0;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--margin-red);
+    }
+
+    .question-actions-row {
+      margin-top: 0.55rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .demo-fill-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--ink-quiet);
+    }
+
+    .rubric-breakdown {
+      margin-top: 0.75rem;
+      padding-top: 0.65rem;
+      border-top: 1px dashed var(--rule-hairline);
+      font-size: 0.84rem;
+    }
+
+    .rubric-breakdown-title {
+      font-weight: 700;
+      color: var(--ink-secondary);
+      margin-bottom: 0.35rem;
+    }
+
+    .rubric-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .rubric-list li + li {
+      margin-top: 0.35rem;
+    }
+
+    .rubric-item-covered {
+      color: var(--stamp-green);
+    }
+
+    .rubric-item-missing {
+      color: var(--margin-red);
+      background-color: var(--margin-red-wash);
+      border: 1px solid #fecaca;
+      padding: 0.3rem 0.5rem;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    /* Stretch Boundary Footer inside Questions Column */
+    .later-boundary-note {
+      padding: 0.9rem 1.25rem;
+      background-color: var(--paper-tint);
+      font-size: 0.85rem;
+      color: var(--ink-secondary);
+      margin-top: auto;
+    }
+
+    .later-boundary-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    /* Planning Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background-color: rgba(28, 25, 21, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-backdrop[hidden] {
+      display: none !important;
+    }
+
+    .modal-sheet {
+      background-color: var(--paper-sheet);
+      border: 2px solid var(--rule-strong);
+      max-width: 44rem;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 0.85rem 1.25rem;
+      background-color: var(--paper-tint);
+      border-bottom: 1px solid var(--rule-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      font-size: 0.92rem;
+    }
+
+    .modal-body h3 {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      margin: 1.1rem 0 0.35rem;
+    }
+    .modal-body h3:first-child {
+      margin-top: 0;
+    }
+
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.85rem;
+    }
+    .spec-table th,
+    .spec-table td {
+      border: 1px solid var(--rule-hairline);
+      padding: 0.45rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .spec-table th {
+      background-color: var(--paper-tint);
+      font-weight: 700;
+    }
+
+    /* Toast */
+    .status-toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 30;
+      background-color: var(--ink);
+      color: var(--paper-sheet);
+      border: 1px solid var(--rule-strong);
+      padding: 0.5rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .status-toast.is-visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="exam-header">
+    <div class="exam-header-inner">
+      <div class="brand-group">
+        <h1 class="brand-title">SignedOff</h1>
+        <p class="brand-sub">
+          AI agents make it easy to ship code you can't explain. Pass the 3-question check to sign off.
+        </p>
+
+        <div id="topBarControls" class="retake-strip" hidden>
+          <button
+            id="resetDemoBtn"
+            type="button"
+            class="btn-paper"
+            title="Clear answers and verdicts for a fresh demo take"
+          >
+            Reset answers
+          </button>
+          <button
+            id="unloadDiffBtn"
+            type="button"
+            class="btn-link-quiet"
+            title="Return to the opening empty exam frame"
+          >
+            Empty frame
+          </button>
+        </div>
+      </div>
+
+      <div class="ledger-status-group">
+        <button
+          id="openDocsModalBtn"
+          type="button"
+          class="btn-paper"
+        >
+          Planning docs &amp; rubric spec
+        </button>
+
+        <div
+          id="solidCounterBadge"
+          class="tally-box"
+          aria-live="polite"
+        >
+          <span id="solidCounterText">0 of 3 solid</span>
+        </div>
+
+        <div
+          id="stampSlot"
+          class="stamp-box stamp-locked"
+          aria-live="polite"
+        >
+          <span id="stampSlotText">Understood: locked</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="exam-workspace">
+
+    <section
+      id="signOffExportSection"
+      class="signoff-export-sheet"
+      aria-live="polite"
+      hidden
+    >
+      <div class="signoff-export-top">
+        <div>
+          <h2 class="signoff-export-title">
+            Understood stamp unlocked (3 of 3 solid)
+          </h2>
+          <p style="margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--stamp-green);">
+            Copy this verified comprehension record into your pull request description or commit message.
+          </p>
+        </div>
+        <button
+          id="copySignOffBtn"
+          type="button"
+          class="btn-ink"
+        >
+          Copy sign-off note
+        </button>
+      </div>
+      <pre id="signOffMarkdownPreview" class="signoff-export-pre"></pre>
+    </section>
+
+    <div class="exam-paper-sheet">
+
+      <!-- Left Pane: Code Diff Sheet -->
+      <section class="diff-ledger-pane" aria-label="Code diff under review">
+        <div class="pane-strip">
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <h2 class="pane-strip-heading">Code diff under review</h2>
+            <code id="diffFilenameBadge" class="code-path">Awaiting sample load...</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span id="redPenCountBadge" class="red-pen-counter" hidden>0 red-pen pointers</span>
+            <button
+              id="clearLineFocusBtn"
+              type="button"
+              class="btn-link-quiet"
+              hidden
+            >
+              Show all lines
+            </button>
+          </div>
+        </div>
+
+        <div id="diffEmptyState" class="diff-empty-prompt">
+          <h3 class="diff-empty-heading">
+            Sample diff: AI agent hardening a login route
+          </h3>
+          <p class="diff-empty-copy">
+            An AI coding agent modified <code class="code-path">src/routes/login.ts</code> to stop brute-force password guessing and timing-based email enumeration. Load the bundled diff to pin the three exam questions to their lines.
+          </p>
+          <button
+            id="loadSampleDiffBtn"
+            type="button"
+            class="btn-ink"
+          >
+            Load sample diff (28 lines, 3 questions)
+          </button>
+          <p class="diff-empty-footnote">
+            Pre-written questions and a hidden server-style rubric make the demo reliable; live question generation for pasted diffs is scoped to Later.
+          </p>
+        </div>
+
+        <div id="diffLoadedState" hidden>
+          <div class="diff-summary-note">
+            <span>
+              <strong>Change summary:</strong> Added pre-lookup IP rate limiting (lines 7 to 11) and constant-time dummy-hash password comparison (lines 17 to 20) in <code>POST /api/login</code>.
+            </span>
+            <span class="diff-stat-group">
+              <span class="diff-stat-add">+16 added</span>
+              <span class="diff-stat-del">-4 removed</span>
+            </span>
+          </div>
+
+          <div id="diffLinesContainer" class="diff-lines-list"></div>
+        </div>
+      </section>
+
+      <!-- Right Pane: Three Comprehension Questions -->
+      <section class="questions-ledger-pane" aria-label="Comprehension questions">
+        <div class="pane-strip">
+          <h2 class="pane-strip-heading">Three comprehension questions</h2>
+          <button
+            id="fillWalkthroughPresetBtn"
+            type="button"
+            class="btn-paper"
+            title="Fill a Partial answer on Q1 and Solid answers on Q2 & Q3 to film the Partial to Revise to Understood flow in one take"
+            hidden
+          >
+            Load 1-take video preset
+          </button>
+        </div>
+
+        <div id="questionsStatusBanner" class="questions-intro-strip">
+          Load the bundled sample diff on the left to enable the answer boxes and pin each question to its lines.
+        </div>
+
+        <div id="questionsContainer"></div>
+
+        <div class="later-boundary-note">
+          <div class="later-boundary-row">
+            <span>
+              <strong>Later stretch boundary:</strong> Paste your own diff with questions generated on the fly.
+            </span>
+            <button
+              id="toggleStretchPreviewBtn"
+              type="button"
+              class="btn-link-quiet"
+            >
+              Why this is in Later
+            </button>
+          </div>
+          <div id="stretchExplanationBox" style="margin-top: 0.5rem;" hidden>
+            Generating questions for arbitrary pasted diffs introduces live model latency and JSON parsing risk during a short demo. Keeping the bundled login-hardening sample as the guaranteed path ensures verdicts and line pointers stay predictable on camera.
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div
+    id="docsModal"
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="docsModalTitle"
+    hidden
+  >
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="docsModalTitle" class="modal-title">
+          SignedOff planning docs &amp; grading architecture
+        </h2>
+        <button
+          id="closeDocsModalBtn"
+          type="button"
+          class="btn-paper"
+        >
+          Close
+        </button>
+      </div>
+      <div class="modal-body">
+        <h3>Grader coverage vs. deterministic verdict derivation</h3>
+        <p style="margin-top: 0;">
+          Per <code>devpost/spec.md</code>, the grader function <code>evaluateRubricCoverage(questionId, answerText)</code> reports <strong>only which rubric point IDs each answer covers</strong>. Pure application code in <code>deriveQuestionState()</code> derives <code>solid</code>, <code>partial</code>, or <code>missed</code> and maps uncovered rubric IDs to exact diff line pointers.
+        </p>
+
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Focus</th>
+              <th>Key decision recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>devpost/scope.md</code></td>
+              <td>Kernel &amp; boundaries</td>
+              <td>"AI agents make it easy to ship code you can't explain." Bundled sample diff is the guaranteed path; live diff generation moves to Later.</td>
+            </tr>
+            <tr>
+              <td><code>devpost/prd.md</code></td>
+              <td>Marked exam paper</td>
+              <td>Off-white archival paper, editorial serif headings, monospace diff, red-pen margin pointers, and a rubber-stamp Understood gate.</td>
+            </tr>
+            <tr>
+              <td><code>devpost/spec.md</code></td>
+              <td>Rubric matcher</td>
+              <td>Two rubric points per question (6 total). Partial answers pin red-pen notes to lines 7, 8, 17, 18, and 20 for one-take video revision.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>One-take demo recording steps (1 to 2 minutes)</h3>
+        <ol style="margin: 0; padding-left: 1.25rem;">
+          <li><strong>Opening frame:</strong> Show the exam paper with <code>0 of 3 solid</code>, the locked stamp, and the three dimmed question placeholders.</li>
+          <li><strong>Load sample diff:</strong> Click <strong>Load sample diff</strong> to populate <code>src/routes/login.ts</code> and pin the questions to their lines.</li>
+          <li><strong>Partial to Revise to Understood:</strong> Click <strong>Load 1-take video preset</strong> (or click <em>Try partial</em> on Q1). Point out the amber <strong>Partial (1/2)</strong> chip on Q1 and the red-pen margin note pinned to Line 17, then click <strong>Revise to solid</strong> on Q1 to land the <strong>Understood</strong> stamp.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="toastContainer"
+    class="status-toast"
+    aria-live="polite"
+  >
+    <span id="toastMessage">Copied</span>
+  </div>
+
+  <script>
+    const LOGIN_SAMPLE_DIFF = {
+      filename: "src/routes/login.ts",
+      title: "Harden POST /api/login against brute-force and timing enumeration",
+      lines: [
+        { num: 1,  type: "ctx", code: "import { Router } from 'express';" },
+        { num: 2,  type: "ctx", code: "import bcrypt from 'bcrypt';" },
+        { num: 3,  type: "add", code: "import { loginLimiter, DUMMY_BCRYPT_HASH } from '@app/security/authGuard';" },
+        { num: 4,  type: "ctx", code: "" },
+        { num: 5,  type: "ctx", code: "export const loginRouter = Router();" },
+        { num: 6,  type: "ctx", code: "loginRouter.post('/api/login', async (req, res) => {" },
+        { num: 7,  type: "add", code: "  const clientIp = (req.headers['x-forwarded-for'] as string) || req.ip;" },
+        { num: 8,  type: "add", code: "  const rateStatus = await loginLimiter.consume(clientIp);" },
+        { num: 9,  type: "add", code: "  if (!rateStatus.allowed) {" },
+        { num: 10, type: "add", code: "    return res.status(429).set('Retry-After', '60').json({ error: 'Too many attempts' });" },
+        { num: 11, type: "add", code: "  }" },
+        { num: 12, type: "ctx", code: "" },
+        { num: 13, type: "ctx", code: "  const { email, password } = req.body;" },
+        { num: 14, type: "ctx", code: "  const user = await db.users.findByEmail(email);" },
+        { num: 15, type: "del", code: "  if (!user) {" },
+        { num: 16, type: "del", code: "    return res.status(401).json({ error: 'User not found' });" },
+        { num: 17, type: "add", code: "  const targetHash = user ? user.passwordHash : DUMMY_BCRYPT_HASH;" },
+        { num: 18, type: "add", code: "  const passwordValid = await bcrypt.compare(password, targetHash);" },
+        { num: 19, type: "add", code: "  if (!user || !passwordValid) {" },
+        { num: 20, type: "add", code: "    return res.status(401).json({ error: 'Invalid credentials' });" },
+        { num: 21, type: "ctx", code: "  }" },
+        { num: 22, type: "ctx", code: "" },
+        { num: 23, type: "del", code: "  const ok = await bcrypt.compare(password, user.passwordHash);" },
+        { num: 24, type: "del", code: "  if (!ok) return res.status(401).json({ error: 'Wrong password' });" },
+        { num: 25, type: "add", code: "  await loginLimiter.reset(clientIp);" },
+        { num: 26, type: "ctx", code: "  const sessionToken = await issueSession(user.id);" },
+        { num: 27, type: "ctx", code: "  return res.status(200).json({ token: sessionToken });" },
+        { num: 28, type: "ctx", code: "});" }
+      ]
+    };
+
+    const EXAM_QUESTIONS = [
+      {
+        id: "q1",
+        number: 1,
+        category: "What changed?",
+        pinnedLinesLabel: "Lines 7 to 20",
+        pinnedLines: [7, 8, 9, 10, 17, 18, 19, 20],
+        prompt: "What two security protections did the agent introduce in POST /api/login compared to the original handler?",
+        placeholder: "Write both security mechanisms added to the route...",
+        demoPartialAnswer: "The agent added IP rate limiting with loginLimiter.consume(clientIp) that returns HTTP 429 Too Many Requests before querying the database.",
+        demoSolidAnswer: "It added pre-query IP rate limiting (returning 429 Too Many Requests) and replaced the early 'User not found' return with a constant-time bcrypt.compare fallback against DUMMY_BCRYPT_HASH and a unified 'Invalid credentials' 401 response.",
+        rubricPoints: [
+          {
+            id: "q1_ratelimit",
+            label: "Pre-lookup IP rate limiting returning HTTP 429",
+            pointerLine: 8,
+            keywords: ["rate", "limit", "limiter", "429", "consume", "too many", "brute", "throttl"],
+            redPenNote: "Look at lines 8 to 10: what happens before db.users.findByEmail if a client sends too many login requests?"
+          },
+          {
+            id: "q1_dummy_hash",
+            label: "Fallback bcrypt check against DUMMY_BCRYPT_HASH + unified 401",
+            pointerLine: 17,
+            keywords: ["dummy", "hash", "bcrypt", "constant", "early", "unified", "invalid credentials", "targethash", "always compare"],
+            redPenNote: "Look at lines 15 to 20: besides rate limiting, notice how the early if (!user) return was replaced on lines 17 and 18 with DUMMY_BCRYPT_HASH."
+          }
+        ]
+      },
+      {
+        id: "q2",
+        number: 2,
+        category: "Why this design?",
+        pinnedLinesLabel: "Lines 15 to 20",
+        pinnedLines: [15, 16, 17, 18, 19, 20],
+        prompt: "Why does the route still execute bcrypt.compare against DUMMY_BCRYPT_HASH when user is null instead of returning 401 right away?",
+        placeholder: "Explain why skipping bcrypt on a missing user leaks information...",
+        demoPartialAnswer: "Because returning 401 immediately skips bcrypt hashing, which takes ~100ms and creates a noticeable response timing difference.",
+        demoSolidAnswer: "Because bcrypt is intentionally slow; returning early when a user is null creates a timing side-channel that lets attackers enumerate which email addresses exist in the database.",
+        rubricPoints: [
+          {
+            id: "q2_timing",
+            label: "Equalizes response latency / prevents timing side-channel",
+            pointerLine: 18,
+            keywords: ["time", "timing", "slow", "latency", "fast", "duration", "ms", "side-channel", "side channel", "equal"],
+            redPenNote: "Look at line 18: bcrypt.compare is CPU-expensive. What can an attacker measure if line 18 only runs when user exists?"
+          },
+          {
+            id: "q2_enumeration",
+            label: "Prevents user or email enumeration",
+            pointerLine: 20,
+            keywords: ["enumerat", "exist", "valid email", "which user", "discover", "probe", "account", "user not found", "distinguish"],
+            redPenNote: "Look at line 16 vs line 20: why did the error message also change from 'User not found' to 'Invalid credentials'?"
+          }
+        ]
+      },
+      {
+        id: "q3",
+        number: 3,
+        category: "What about an edge case?",
+        pinnedLinesLabel: "Lines 7, 8 & 25",
+        pinnedLines: [7, 8, 9, 25],
+        prompt: "Inspect lines 7, 8, and 25. How could an attacker bypass loginLimiter, or how could legitimate users get locked out?",
+        placeholder: "Point out the flaw with x-forwarded-for or IP-only rate limiting...",
+        demoPartialAnswer: "An attacker can spoof the X-Forwarded-For HTTP header on each request to rotate fake clientIp values and bypass the rate limiter.",
+        demoSolidAnswer: "An attacker can spoof the raw x-forwarded-for header on line 7 to fake a new IP on every attempt, and keying only on IP (or resetting the whole IP on line 25) can lock out legitimate users behind a shared NAT or office IP.",
+        rubricPoints: [
+          {
+            id: "q3_xff_spoof",
+            label: "Unvalidated X-Forwarded-For header spoofing bypasses rate limit",
+            pointerLine: 7,
+            keywords: ["x-forwarded-for", "forwarded", "header", "spoof", "fake", "forge", "proxy", "rotate", "bypass"],
+            redPenNote: "Look at line 7: req.headers['x-forwarded-for'] is read directly from the request. What if a client sends a forged header value?"
+          },
+          {
+            id: "q3_shared_ip",
+            label: "Shared IP / NAT lockout (or resetting entire IP bucket on line 25)",
+            pointerLine: 8,
+            keywords: ["shared", "nat", "office", "campus", "vpn", "lockout", "lock out", "innocent", "legitimate", "per-email", "reset", "line 25"],
+            redPenNote: "Look at lines 8 and 25: loginLimiter keys only on clientIp (not email). What happens on shared office Wi-Fi or when an attacker logs into their own account to trigger reset(clientIp)?"
+          }
+        ]
+      }
+    ];
+
+    const examState = {
+      diffLoaded: false,
+      focusedLines: [],
+      answers: { q1: "", q2: "", q3: "" },
+      gradedCoverage: { q1: null, q2: null, q3: null },
+      validationMessage: { q1: "", q2: "", q3: "" }
+    };
+
+    function evaluateRubricCoverage(questionId, rawAnswer) {
+      const question = EXAM_QUESTIONS.find(q => q.id === questionId);
+      if (!question) return [];
+      const normalized = String(rawAnswer || "").toLowerCase();
+
+      const coveredPointIds = [];
+      for (const point of question.rubricPoints) {
+        const matched = point.keywords.some(kw => normalized.includes(kw.toLowerCase()));
+        if (matched) {
+          coveredPointIds.push(point.id);
+        }
+      }
+      return coveredPointIds;
+    }
+
+    function deriveQuestionState(question, coveredPointIds) {
+      if (!Array.isArray(coveredPointIds)) {
+        return {
+          verdict: "ungraded",
+          coveredCount: 0,
+          totalCount: question.rubricPoints.length,
+          coveredPoints: [],
+          missingPoints: [],
+          redPenPointers: []
+        };
+      }
+
+      const coveredSet = new Set(coveredPointIds);
+      const coveredPoints = question.rubricPoints.filter(p => coveredSet.has(p.id));
+      const missingPoints = question.rubricPoints.filter(p => !coveredSet.has(p.id));
+
+      let verdict = "missed";
+      if (coveredPoints.length === question.rubricPoints.length) {
+        verdict = "solid";
+      } else if (coveredPoints.length > 0) {
+        verdict = "partial";
+      }
+
+      const redPenPointers = missingPoints.map(p => ({
+        questionId: question.id,
+        questionNumber: question.number,
+        rubricPointId: p.id,
+        line: p.pointerLine,
+        note: p.redPenNote,
+        verdict
+      }));
+
+      return {
+        verdict,
+        coveredCount: coveredPoints.length,
+        totalCount: question.rubricPoints.length,
+        coveredPoints,
+        missingPoints,
+        redPenPointers
+      };
+    }
+
+    function deriveExamSummary() {
+      const perQuestion = {};
+      const allRedPenPointers = [];
+      let solidCount = 0;
+
+      for (const q of EXAM_QUESTIONS) {
+        const qState = deriveQuestionState(q, examState.gradedCoverage[q.id]);
+        perQuestion[q.id] = qState;
+        if (qState.verdict === "solid") {
+          solidCount += 1;
+        }
+        for (const ptr of qState.redPenPointers) {
+          allRedPenPointers.push(ptr);
+        }
+      }
+
+      return {
+        perQuestion,
+        solidCount,
+        totalQuestions: EXAM_QUESTIONS.length,
+        stampUnlocked: solidCount === EXAM_QUESTIONS.length,
+        allRedPenPointers
+      };
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showToast(message) {
+      const toastContainer = document.getElementById("toastContainer");
+      const toastMessage = document.getElementById("toastMessage");
+      toastMessage.textContent = message;
+      toastContainer.classList.add("is-visible");
+      if (window._toastTimer) clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toastContainer.classList.remove("is-visible");
+      }, 2400);
+    }
+
+    function renderTopBar(examSummary) {
+      const solidCounterText = document.getElementById("solidCounterText");
+      const solidCounterBadge = document.getElementById("solidCounterBadge");
+      const stampSlot = document.getElementById("stampSlot");
+      const stampSlotText = document.getElementById("stampSlotText");
+      const topBarControls = document.getElementById("topBarControls");
+      const fillWalkthroughPresetBtn = document.getElementById("fillWalkthroughPresetBtn");
+
+      solidCounterText.textContent = `${examSummary.solidCount} of ${examSummary.totalQuestions} solid`;
+
+      if (examSummary.stampUnlocked) {
+        solidCounterBadge.className = "tally-box is-complete";
+        stampSlot.className = "stamp-box stamp-unlocked";
+        stampSlotText.textContent = "Understood";
+      } else {
+        solidCounterBadge.className = "tally-box";
+        stampSlot.className = "stamp-box stamp-locked";
+        stampSlotText.textContent = "Understood: locked";
+      }
+
+      topBarControls.hidden = !examState.diffLoaded;
+      fillWalkthroughPresetBtn.hidden = !examState.diffLoaded;
+    }
+
+    function renderDiffPane(examSummary) {
+      const emptyState = document.getElementById("diffEmptyState");
+      const loadedState = document.getElementById("diffLoadedState");
+      const filenameBadge = document.getElementById("diffFilenameBadge");
+      const redPenCountBadge = document.getElementById("redPenCountBadge");
+      const clearLineFocusBtn = document.getElementById("clearLineFocusBtn");
+      const linesContainer = document.getElementById("diffLinesContainer");
+
+      if (!examState.diffLoaded) {
+        emptyState.hidden = false;
+        loadedState.hidden = true;
+        filenameBadge.textContent = "Awaiting sample load...";
+        redPenCountBadge.hidden = true;
+        clearLineFocusBtn.hidden = true;
+        return;
+      }
+
+      emptyState.hidden = true;
+      loadedState.hidden = false;
+      filenameBadge.textContent = LOGIN_SAMPLE_DIFF.filename;
+
+      const pointersByLine = {};
+      for (const ptr of examSummary.allRedPenPointers) {
+        if (!pointersByLine[ptr.line]) pointersByLine[ptr.line] = [];
+        pointersByLine[ptr.line].push(ptr);
+      }
+
+      const pointerCount = examSummary.allRedPenPointers.length;
+      if (pointerCount > 0) {
+        redPenCountBadge.hidden = false;
+        redPenCountBadge.textContent = `${pointerCount} red-pen pointer${pointerCount === 1 ? "" : "s"}`;
+      } else {
+        redPenCountBadge.hidden = true;
+      }
+
+      clearLineFocusBtn.hidden = examState.focusedLines.length === 0;
+
+      const focusedSet = new Set(examState.focusedLines);
+
+      const rowsHtml = LOGIN_SAMPLE_DIFF.lines.map(lineObj => {
+        const linePointers = pointersByLine[lineObj.num] || [];
+        const hasPointer = linePointers.length > 0;
+        const isFocused = focusedSet.has(lineObj.num);
+
+        const rowClasses = ["diff-row"];
+        let prefixChar = " ";
+
+        if (lineObj.type === "add") {
+          rowClasses.push("is-add");
+          prefixChar = "+";
+        } else if (lineObj.type === "del") {
+          rowClasses.push("is-del");
+          prefixChar = "-";
+        }
+
+        if (hasPointer) {
+          rowClasses.push("is-pinned");
+        } else if (isFocused) {
+          rowClasses.push("is-focused");
+        }
+
+        const questionPinTags = [];
+        if (lineObj.num === 7) questionPinTags.push("Q1, Q3");
+        if (lineObj.num === 17) questionPinTags.push("Q1, Q2");
+
+        const pinBadgeHtml = questionPinTags.length > 0
+          ? `<span class="line-pin-tag">${questionPinTags.join(" / ")}</span>`
+          : "";
+
+        const redPenCalloutsHtml = linePointers.map(ptr => `
+          <div class="red-pen-note">
+            <span>
+              <strong>Red pen (Q${ptr.questionNumber}, line ${ptr.line}):</strong>
+              ${escapeHtml(ptr.note)}
+            </span>
+            <span class="red-pen-tag">
+              ${ptr.verdict === "partial" ? "Partial: revise" : "Missed"}
+            </span>
+          </div>
+        `).join("");
+
+        return `
+          <div id="diff-line-${lineObj.num}" class="${rowClasses.join(" ")}">
+            <div class="diff-row-main">
+              <button
+                type="button"
+                data-focus-line="${lineObj.num}"
+                class="diff-line-num"
+                title="Highlight line ${lineObj.num}"
+              >${lineObj.num}</button>
+              <span class="diff-sign">${prefixChar}</span>
+              <pre class="diff-code"><code>${escapeHtml(lineObj.code || " ")}</code>${pinBadgeHtml}</pre>
+            </div>
+            ${redPenCalloutsHtml}
+          </div>
+        `;
+      }).join("");
+
+      linesContainer.innerHTML = rowsHtml;
+    }
+
+    function renderQuestionCards(examSummary) {
+      const statusBanner = document.getElementById("questionsStatusBanner");
+      const container = document.getElementById("questionsContainer");
+
+      if (!examState.diffLoaded) {
+        statusBanner.textContent = "Load the bundled sample diff on the left to enable the answer boxes and pin each question to its lines.";
+      } else if (examSummary.stampUnlocked) {
+        statusBanner.textContent = "All 3 questions are Solid. Your Understood rubber stamp and sign-off note are unlocked.";
+      } else {
+        statusBanner.textContent = "Answer each question below. Partial or missed answers pin red-pen notes to the exact diff lines you need to inspect.";
+      }
+
+      const cardsHtml = EXAM_QUESTIONS.map(q => {
+        const qState = examSummary.perQuestion[q.id];
+        const currentAnswer = examState.answers[q.id] || "";
+        const validationMsg = examState.validationMessage[q.id] || "";
+
+        let chipClass = "verdict-chip";
+        let chipLabel = examState.diffLoaded ? "Ungraded" : "Locked";
+
+        if (qState.verdict === "solid") {
+          chipClass = "verdict-chip is-solid";
+          chipLabel = `Solid (${qState.coveredCount}/${qState.totalCount})`;
+        } else if (qState.verdict === "partial") {
+          chipClass = "verdict-chip is-partial";
+          chipLabel = `Partial (${qState.coveredCount}/${qState.totalCount})`;
+        } else if (qState.verdict === "missed") {
+          chipClass = "verdict-chip is-missed";
+          chipLabel = `Missed (0/${qState.totalCount})`;
+        }
+
+        const sectionClass = examState.diffLoaded
+          ? "question-section"
+          : "question-section is-locked";
+
+        let rubricFeedbackHtml = "";
+        if (qState.verdict !== "ungraded") {
+          const pointsListHtml = q.rubricPoints.map(pt => {
+            const isCovered = qState.coveredPoints.some(cp => cp.id === pt.id);
+            if (isCovered) {
+              return `
+                <li class="rubric-item-covered">
+                  <strong>Covered:</strong> ${escapeHtml(pt.label)}
+                </li>
+              `;
+            } else {
+              return `
+                <li class="rubric-item-missing">
+                  <span><strong>Missing (line ${pt.pointerLine}):</strong> ${escapeHtml(pt.redPenNote)}</span>
+                  <button
+                    type="button"
+                    data-jump-line="${pt.pointerLine}"
+                    class="btn-link-quiet"
+                    style="color: var(--margin-red); font-weight: 700; white-space: nowrap;"
+                  >
+                    Jump to line ${pt.pointerLine}
+                  </button>
+                </li>
+              `;
+            }
+          }).join("");
+
+          rubricFeedbackHtml = `
+            <div class="rubric-breakdown">
+              <div class="rubric-breakdown-title">
+                Rubric points derived in code:
+              </div>
+              <ul class="rubric-list">
+                ${pointsListHtml}
+              </ul>
+            </div>
+          `;
+        }
+
+        const validationHtml = validationMsg
+          ? `<p class="validation-msg">${escapeHtml(validationMsg)}</p>`
+          : "";
+
+        return `
+          <article class="${sectionClass}">
+            <div class="question-top-row">
+              <div class="question-title-group">
+                <h3 class="question-heading">Q${q.number}. ${escapeHtml(q.category)}</h3>
+                <button
+                  type="button"
+                  data-pin-question="${q.id}"
+                  ${!examState.diffLoaded ? "disabled" : ""}
+                  class="btn-paper"
+                  title="Highlight pinned diff lines for Q${q.number}"
+                >
+                  ${escapeHtml(q.pinnedLinesLabel)}
+                </button>
+              </div>
+              <span class="${chipClass}">
+                ${escapeHtml(chipLabel)}
+              </span>
+            </div>
+
+            <p class="question-prompt">
+              ${escapeHtml(q.prompt)}
+            </p>
+
+            <label for="answer-input-${q.id}" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);">
+              Your answer for question ${q.number}
+            </label>
+            <textarea
+              id="answer-input-${q.id}"
+              data-question-input="${q.id}"
+              rows="3"
+              ${!examState.diffLoaded ? "disabled" : ""}
+              placeholder="${escapeHtml(q.placeholder)}"
+              class="answer-box"
+            >${escapeHtml(currentAnswer)}</textarea>
+
+            ${validationHtml}
+
+            <div class="question-actions-row">
+              <div class="demo-fill-group">
+                <span>Sample answers:</span>
+                <button
+                  type="button"
+                  data-fill-partial="${q.id}"
+                  ${!examState.diffLoaded ? "disabled" : ""}
+                  class="btn-paper"
+                  title="Fill a partial answer (covers 1 of 2 rubric points) to trigger the red-pen line pointer"
+                >
+                  Try partial
+                </button>
+                <button
+                  type="button"
+                  data-fill-solid="${q.id}"
+                  ${!examState.diffLoaded ? "disabled" : ""}
+                  class="btn-paper"
+                  title="Fill a complete answer covering all rubric points"
+                >
+                  Revise to solid
+                </button>
+              </div>
+
+              <button
+                type="button"
+                data-grade-question="${q.id}"
+                ${!examState.diffLoaded ? "disabled" : ""}
+                class="btn-ink"
+              >
+                ${qState.verdict === "ungraded" ? "Check answer" : "Re-grade answer"}
+              </button>
+            </div>
+
+            ${rubricFeedbackHtml}
+          </article>
+        `;
+      }).join("");
+
+      container.innerHTML = cardsHtml;
+    }
+
+    function renderSignOffExport(examSummary) {
+      const exportSection = document.getElementById("signOffExportSection");
+      const previewEl = document.getElementById("signOffMarkdownPreview");
+
+      if (!examState.diffLoaded || !examSummary.stampUnlocked) {
+        exportSection.hidden = true;
+        return;
+      }
+
+      exportSection.hidden = false;
+
+      const markdownLines = [
+        `### SignedOff Diff Comprehension Check: UNDERSTOOD (3/3 Solid)`,
+        `- **Target Diff:** \`${LOGIN_SAMPLE_DIFF.filename}\` (${LOGIN_SAMPLE_DIFF.title})`,
+        `- **Q1 (What changed?):** ${examState.answers.q1.trim()}`,
+        `- **Q2 (Why this design?):** ${examState.answers.q2.trim()}`,
+        `- **Q3 (Edge case inspected):** ${examState.answers.q3.trim()}`,
+        ``,
+        `> SignedOff: Verified all 3 comprehension rubrics before merge.`
+      ];
+      previewEl.textContent = markdownLines.join("\n");
+    }
+
+    function renderExamPaper() {
+      const examSummary = deriveExamSummary();
+      renderTopBar(examSummary);
+      renderDiffPane(examSummary);
+      renderQuestionCards(examSummary);
+      renderSignOffExport(examSummary);
+    }
+
+    function loadSampleDiff() {
+      examState.diffLoaded = true;
+      examState.focusedLines = [];
+      renderExamPaper();
+      showToast("Loaded sample diff: src/routes/login.ts");
+    }
+
+    function resetAnswersOnly() {
+      examState.answers = { q1: "", q2: "", q3: "" };
+      examState.gradedCoverage = { q1: null, q2: null, q3: null };
+      examState.validationMessage = { q1: "", q2: "", q3: "" };
+      examState.focusedLines = [];
+      renderExamPaper();
+      showToast("Reset answers and verdicts for retake");
+    }
+
+    function unloadToEmptyFrame() {
+      examState.diffLoaded = false;
+      examState.answers = { q1: "", q2: "", q3: "" };
+      examState.gradedCoverage = { q1: null, q2: null, q3: null };
+      examState.validationMessage = { q1: "", q2: "", q3: "" };
+      examState.focusedLines = [];
+      renderExamPaper();
+      showToast("Returned to opening empty exam frame");
+    }
+
+    function gradeQuestion(questionId) {
+      const text = (examState.answers[questionId] || "").trim();
+      if (!text) {
+        examState.validationMessage[questionId] = "Write a brief explanation (or click a sample answer button) before grading.";
+        renderExamPaper();
+        return;
+      }
+
+      examState.validationMessage[questionId] = "";
+      const coveredIds = evaluateRubricCoverage(questionId, text);
+      examState.gradedCoverage[questionId] = coveredIds;
+
+      const question = EXAM_QUESTIONS.find(q => q.id === questionId);
+      const derived = deriveQuestionState(question, coveredIds);
+
+      if (derived.redPenPointers.length > 0) {
+        examState.focusedLines = derived.redPenPointers.map(p => p.line);
+      } else {
+        examState.focusedLines = [];
+      }
+
+      renderExamPaper();
+
+      if (derived.redPenPointers.length > 0) {
+        const firstLine = derived.redPenPointers[0].line;
+        const rowEl = document.getElementById(`diff-line-${firstLine}`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        showToast(`Q${question.number} marked ${derived.verdict}: check red-pen note on line ${firstLine}`);
+      } else {
+        const summary = deriveExamSummary();
+        if (summary.stampUnlocked) {
+          showToast("3 of 3 solid. Understood stamp unlocked.");
+        } else {
+          showToast(`Q${question.number} marked solid.`);
+        }
+      }
+    }
+
+    function loadOneTakeVideoPreset() {
+      if (!examState.diffLoaded) {
+        examState.diffLoaded = true;
+      }
+      const q1 = EXAM_QUESTIONS[0];
+      const q2 = EXAM_QUESTIONS[1];
+      const q3 = EXAM_QUESTIONS[2];
+
+      examState.answers.q1 = q1.demoPartialAnswer;
+      examState.answers.q2 = q2.demoSolidAnswer;
+      examState.answers.q3 = q3.demoSolidAnswer;
+
+      examState.validationMessage = { q1: "", q2: "", q3: "" };
+      examState.gradedCoverage.q1 = evaluateRubricCoverage("q1", examState.answers.q1);
+      examState.gradedCoverage.q2 = evaluateRubricCoverage("q2", examState.answers.q2);
+      examState.gradedCoverage.q3 = evaluateRubricCoverage("q3", examState.answers.q3);
+
+      examState.focusedLines = [17];
+      renderExamPaper();
+      showToast("1-take preset loaded: Q1 is Partial (red-pen on line 17), Q2 & Q3 are Solid.");
+    }
+
+    function copySignOffToClipboard() {
+      const previewEl = document.getElementById("signOffMarkdownPreview");
+      const text = previewEl ? previewEl.textContent : "";
+      if (!text) return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("Copied sign-off note to clipboard.");
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast("Copied sign-off note to clipboard.");
+      } catch (err) {
+        showToast("Press Ctrl+C or Cmd+C to copy the note below.");
+      }
+      document.body.removeChild(ta);
+    }
+
+    document.getElementById("loadSampleDiffBtn").addEventListener("click", loadSampleDiff);
+    document.getElementById("resetDemoBtn").addEventListener("click", resetAnswersOnly);
+    document.getElementById("unloadDiffBtn").addEventListener("click", unloadToEmptyFrame);
+    document.getElementById("fillWalkthroughPresetBtn").addEventListener("click", loadOneTakeVideoPreset);
+    document.getElementById("copySignOffBtn").addEventListener("click", copySignOffToClipboard);
+
+    document.getElementById("clearLineFocusBtn").addEventListener("click", () => {
+      examState.focusedLines = [];
+      renderExamPaper();
+    });
+
+    document.getElementById("toggleStretchPreviewBtn").addEventListener("click", () => {
+      const box = document.getElementById("stretchExplanationBox");
+      box.hidden = !box.hidden;
+    });
+
+    const docsModal = document.getElementById("docsModal");
+    document.getElementById("openDocsModalBtn").addEventListener("click", () => {
+      docsModal.hidden = false;
+    });
+    document.getElementById("closeDocsModalBtn").addEventListener("click", () => {
+      docsModal.hidden = true;
+    });
+    docsModal.addEventListener("click", (e) => {
+      if (e.target === docsModal) {
+        docsModal.hidden = true;
+      }
+    });
+
+    document.addEventListener("input", (e) => {
+      const target = e.target;
+      if (target && target.dataset && target.dataset.questionInput) {
+        const qId = target.dataset.questionInput;
+        examState.answers[qId] = target.value;
+        if (examState.validationMessage[qId]) {
+          examState.validationMessage[qId] = "";
+        }
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      if (btn.dataset.gradeQuestion) {
+        gradeQuestion(btn.dataset.gradeQuestion);
+        return;
+      }
+
+      if (btn.dataset.fillPartial) {
+        const qId = btn.dataset.fillPartial;
+        const q = EXAM_QUESTIONS.find(item => item.id === qId);
+        if (q) {
+          examState.answers[qId] = q.demoPartialAnswer;
+          gradeQuestion(qId);
+        }
+        return;
+      }
+
+      if (btn.dataset.fillSolid) {
+        const qId = btn.dataset.fillSolid;
+        const q = EXAM_QUESTIONS.find(item => item.id === qId);
+        if (q) {
+          examState.answers[qId] = q.demoSolidAnswer;
+          gradeQuestion(qId);
+        }
+        return;
+      }
+
+      if (btn.dataset.pinQuestion) {
+        const qId = btn.dataset.pinQuestion;
+        const q = EXAM_QUESTIONS.find(item => item.id === qId);
+        if (q && examState.diffLoaded) {
+          examState.focusedLines = q.pinnedLines.slice();
+          renderExamPaper();
+          const firstLineEl = document.getElementById(`diff-line-${q.pinnedLines[0]}`);
+          if (firstLineEl) {
+            firstLineEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+        return;
+      }
+
+      if (btn.dataset.jumpLine) {
+        const lineNum = parseInt(btn.dataset.jumpLine, 10);
+        if (!isNaN(lineNum) && examState.diffLoaded) {
+          examState.focusedLines = [lineNum];
+          renderExamPaper();
+          const lineEl = document.getElementById(`diff-line-${lineNum}`);
+          if (lineEl) {
+            lineEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+        return;
+      }
+
+      if (btn.dataset.focusLine) {
+        const lineNum = parseInt(btn.dataset.focusLine, 10);
+        if (!isNaN(lineNum) && examState.diffLoaded) {
+          if (examState.focusedLines.length === 1 && examState.focusedLines[0] === lineNum) {
+            examState.focusedLines = [];
+          } else {
+            examState.focusedLines = [lineNum];
+          }
+          renderExamPaper();
+        }
+      }
+    });
+
+    renderExamPaper();
+  </script>
+</body>
+</html>

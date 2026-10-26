@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App Map &amp; Code Tour | SignedOff</title>
+  <style>
+    :root {
+      --paper: #f5f3ed;
+      --sheet: #fffdf8;
+      --ink: #1d1b18;
+      --muted: #665f54;
+      --rule: #dcd5c7;
+      --red: #b91c1c;
+      --green: #166534;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem 1.25rem 4rem;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--sheet);
+      border: 1px solid var(--rule);
+      padding: 2.25rem;
+      box-shadow: 0 8px 24px rgba(29, 27, 24, 0.06);
+    }
+    .eyebrow {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    h1 { margin: 0.25rem 0 1rem; font-size: 1.9rem; }
+    h2 { font-size: 1.25rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.35rem; margin-top: 2rem; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    .box {
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .code-ref {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      color: var(--red);
+      font-weight: 700;
+    }
+    .takeaway {
+      border-left: 4px solid var(--green);
+      background: #f0fdf4;
+      padding: 1rem 1.25rem;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="eyebrow">devpost/app-map.html • 5-build Code Tour &amp; App Map</div>
+    <h1>SignedOff — Architecture &amp; Code Map</h1>
+    <p>This map traces a single user action—checking an explanation—through the three core locations in <code>index.html</code>.</p>
+
+    <h2>End-to-End Action Trace: "Check Answer" → Red-Pen Line Pointer → Stamp Unlock</h2>
+    <div class="flow">
+      <div class="box">
+        <div class="code-ref">1. index.html • gradeQuestion()</div>
+        <p><strong>Input Capture:</strong> Reads the learner's explanation for <code>q1</code>, <code>q2</code>, or <code>q3</code>, validates non-empty text, and passes it to the rubric coverage matcher.</p>
+      </div>
+      <div class="box">
+        <div class="code-ref">2. index.html • evaluateRubricCoverage()</div>
+        <p><strong>Rubric Point Matcher:</strong> Evaluates which rubric criteria are covered and returns <em>only</em> an array of covered point IDs (e.g. <code>["q1_ratelimit"]</code>).</p>
+      </div>
+      <div class="box">
+        <div class="code-ref">3. index.html • deriveQuestionState()</div>
+        <p><strong>Deterministic Verdict &amp; Pointers:</strong> Pure code derives <code>solid</code>, <code>partial</code>, or <code>missed</code>, maps uncovered rubric IDs to red-pen diff line pointers, and unlocks the <strong>UNDERSTOOD</strong> stamp at 3/3.</p>
+      </div>
+    </div>
+
+    <div class="takeaway">
+      <strong>Reusable Plan-First Takeaway:</strong> Never let a grader directly dictate UI state or line numbers. Have the grader report only which rubric points were covered, and let deterministic code compute the verdict chip, the red-pen line pointers, and the sign-off gate.
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <title>Scope | SignedOff — AI Diff Comprehension Check</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f5f3ed;
+      --card: #fffdf8;
+      --ink: #1d1b18;
+      --muted: #655f56;
+      --rule: #dcd6c8;
+      --red-pen: #b91c1c;
+      --red-soft: #fef2f2;
+      --green-ink: #166534;
+      --green-soft: #f0fdf4;
+      --amber-ink: #92400e;
+      --amber-soft: #fffbeb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2.5rem 1.25rem 4rem;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+    .sheet {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--rule);
+      box-shadow: 0 8px 28px rgba(29, 27, 24, 0.06);
+      padding: 2.5rem;
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 1.25rem;
+      margin-bottom: 2rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .eyebrow {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+    }
+    .stamp {
+      border: 2px solid var(--green-ink);
+      color: var(--green-ink);
+      background: var(--green-soft);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.4rem 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transform: rotate(-2deg);
+    }
+    h2 {
+      font-size: 1.25rem;
+      margin-top: 2rem;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.35rem;
+    }
+    p { margin: 0.5rem 0 1rem; }
+    .loop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    .step-card {
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    .step-num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.75rem;
+      color: var(--red-pen);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .bounds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .bound-col {
+      border: 1px solid var(--rule);
+      padding: 1rem 1.15rem;
+      border-radius: 4px;
+    }
+    .bound-now { background: var(--green-soft); border-color: #bbf7d0; }
+    .bound-later { background: var(--amber-soft); border-color: #fde68a; }
+    .bound-cut { background: var(--red-soft); border-color: #fecaca; }
+    .bound-col h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.95rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-transform: uppercase;
+    }
+    ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.94rem; }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <header class="header-bar">
+      <div>
+        <div class="eyebrow">devpost/scope.md • 2-scope companion</div>
+        <h1>SignedOff — AI Diff Comprehension Check</h1>
+      </div>
+      <div class="stamp">Status: Approved</div>
+    </header>
+
+    <section>
+      <h2>Why It Matters</h2>
+      <p><strong>AI agents make it easy to ship code you can't explain.</strong> SignedOff turns "it works" into "I actually understand it" by requiring you to explain what changed, why the design works, and what happens on an edge case before unlocking a sign-off stamp.</p>
+    </section>
+
+    <section>
+      <h2>The Core Loop (Sample-First Guaranteed Path)</h2>
+      <div class="loop-grid">
+        <div class="step-card">
+          <div class="step-num">Step 1 • Load</div>
+          <p>Click <strong>Load sample diff</strong> to populate the numbered login-hardening diff and unlock the 3 exam questions.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 2 • Answer</div>
+          <p>Explain what changed, why constant-time + dummy hash is used, and the proxy IP spoofing edge case.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 3 • Revise</div>
+          <p>Partial answers trigger red-pen line pointers on the exact diff lines missed so you can revise to Solid.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 4 • Stamp</div>
+          <p>Reaching <strong>3 of 3 solid</strong> lands the rubber-stamp <strong>UNDERSTOOD</strong> badge and unlocks the Sign-Off note.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Scope Boundaries</h2>
+      <div class="bounds-grid">
+        <div class="bound-col bound-now">
+          <h3>Now (Guaranteed Path)</h3>
+          <ul>
+            <li>Bundled login-hardening sample diff loaded via button</li>
+            <li>Three pre-written questions &amp; hidden rubric</li>
+            <li>Deterministic Solid / Partial / Missed verdicts + red-pen line pointers</li>
+            <li>Rubber-stamp Understood gate &amp; sign-off export</li>
+          </ul>
+        </div>
+        <div class="bound-col bound-later">
+          <h3>Later (Stretch)</h3>
+          <ul>
+            <li>Paste your own diff with questions generated on the fly</li>
+            <li>Additional bundled diff scenarios</li>
+            <li>Git pre-push hook &amp; PR comment bot</li>
+          </ul>
+        </div>
+        <div class="bound-col bound-cut">
+          <h3>Cut (Out of Scope)</h3>
+          <ul>
+            <li>User accounts, sign-in, or cloud database</li>
+            <li>Full repository file tree browser</li>
+            <li>Chatbots that give away the answer</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
